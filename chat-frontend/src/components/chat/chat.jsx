@@ -8,7 +8,7 @@ const connOpt = {
   transports: ["websocket"], // socket connectin options
 };
 
-let socket = io("http://localhost:9999/", connOpt); //socket instance
+let socket = io("https://chatio-backend.herokuapp.com/", connOpt); //socket instance
 class Chat extends Component {
   constructor() {
     super();
