@@ -2,7 +2,7 @@
     border:1px solid #0F0F0F;
     margin-top: 15px;
     border-radius:10px;
-    width:90%
+    width:90%;
 }
 .profileRow{
     padding-left: 10px;
@@ -13,7 +13,9 @@
 .onlineProfiles{
     border:1px solid #00ff84;
     padding:15px;
-    font-size: 19px
+    font-size: 19px;
+    padding-top: 33px !important;
+
 }
 .msgInput{
    color:#00ff84 !important;
