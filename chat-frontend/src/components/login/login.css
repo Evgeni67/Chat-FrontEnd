@@ -1,0 +1,25 @@
+.modalLogin {
+    /* background-color: #00ff84; */
+    margin-top:20%;
+    background-color: #0F0F0F;
+    color:#00ff84;
+    padding-bottom: 20px;
+    padding-top: 20px;
+    width:80%;
+    border:1px solid #00ff84;
+    border-radius: 10px;
+    box-shadow: 3px 3px 3px 3px, 0px 0.4em 0.4em #00ff84;
+}
+.question1{
+    color:#00ff84;
+}
+.loginTextArea{
+    background-color: #0F0F0F !important;
+    color:#00ff84 !important;
+    width:50%
+}
+.applyBtn{
+    width: 50%;
+    border:1px solid #00ff84;
+    text-align:center;border-radius:5px
+}
