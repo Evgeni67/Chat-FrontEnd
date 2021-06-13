@@ -15,6 +15,7 @@ class Chat extends Component {
     this.state = {
       onlineProfiles: [],
       msg: "",
+      me:"",
       to: "",
       convo: [],
       showConvos: false,
@@ -61,7 +62,7 @@ class Chat extends Component {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       },
       body: JSON.stringify({
-        from: localStorage.getItem("username"),
+        from: [this.state.me,localStorage.getItem("username")],
         to: this.state.to,
         message: this.state.msg,
       }),
@@ -70,10 +71,11 @@ class Chat extends Component {
       .then((data) => console.log(data));
     socket.emit("sendMsg", {
       //emitting an event with a payload to send the message to all connected users
-      from: localStorage.getItem("username"),
+      from: [this.state.me, localStorage.getItem("username")],
       to: this.state.to,
       message: this.state.msg,
     });
+    document.querySelector(".msgInput").value = ""
   };
   componentWillUnmount = async () => {
     await this.logOut()
@@ -85,6 +87,16 @@ class Chat extends Component {
     socket.on("login", (user) =>
       this.setState({ onlineProfiles: this.state.onlineProfiles.concat(user) })
     );
+    const url1 = process.env.REACT_APP_URL + "/profiles/me";
+    await fetch(url1, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+      }
+    })
+      .then((response) => response.json())
+      .then((data) => this.setState({me:data.profilePic}));
     socket.on("logOut", (name) =>
       this.setState({
         onlineProfiles: this.state.onlineProfiles.filter(
@@ -115,6 +127,7 @@ class Chat extends Component {
         <p className="welcome2" onClick={() => this.logOut()}>
           LogOut
         </p>
+        <Container>
         <Row className="logoRow d-flex justify-content-center ">
           <img src={logo} />
           </Row>{" "}
@@ -146,23 +159,28 @@ class Chat extends Component {
         <Container className="chatContainer mt-3">
           {this.state.convo.map((msg) => (
             <Row>
+              
               <p
                 className={
-                  msg.from === localStorage.getItem("username")
+                  msg.from[1] === localStorage.getItem("username")
                     ? "msgRowMe"
                     : "visually-hidden"
                 }
               >
+           
                 <h className="borderClass">{msg.message}</h>
+                <img src = {msg.from[0]} className = "profilePic1"/>
               </p>
               <p
                 className={
-                  msg.from === localStorage.getItem("username")
+                  msg.from[1] === localStorage.getItem("username")
                     ? "visually-hidden"
                     : " msgRow "
                 }
               >
+                   <img src = {msg.from[0]} className = "profilePic2"/>
                 <h className="borderClass2">{msg.message}</h>
+             
               </p>
             </Row>
           ))}
@@ -188,7 +206,7 @@ class Chat extends Component {
             <> </>
           )}
         </Container>
-        .
+        </Container>
       </>
     );
   }
