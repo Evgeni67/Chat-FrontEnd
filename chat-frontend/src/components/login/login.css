@@ -12,6 +12,10 @@
 }
 .question1{
     color:#00ff84;
+    
+}
+.loaderRow{
+    margin-top: -35px !important;
 }
 .loginTextArea{
     background-color: #0F0F0F !important;
