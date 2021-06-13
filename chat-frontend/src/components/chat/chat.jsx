@@ -37,6 +37,7 @@ class Chat extends Component {
       .then((data) => this.setState({ convo: data.messages }));
     this.setState({ to: name });
   };
+ 
   logOut = async (id) => {
     console.log(process.env.REACT_APP_URL);
     const url = process.env.REACT_APP_URL + "/profiles/logOut";
@@ -74,7 +75,9 @@ class Chat extends Component {
       message: this.state.msg,
     });
   };
-
+  componentWillUnmount = async () => {
+    await this.logOut()
+   }
   componentDidMount = async () => {
     socket.on("sendMsg", (msg) =>
       this.setState({ convo: this.state.convo.concat(msg) })
