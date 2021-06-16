@@ -2,8 +2,9 @@ import React, { Component } from "react";
 import "bootstrap/dist/css/bootstrap.css";
 import { Row, Container } from "react-bootstrap";
 import "./chat.css";
-import logo from "./chatImg.jpg" 
+import logo from "./chatImg.jpg";
 import io from "socket.io-client";
+var uniqid = require("uniqid");
 const connOpt = {
   transports: ["websocket"], // socket connectin options
 };
@@ -15,12 +16,14 @@ class Chat extends Component {
     this.state = {
       onlineProfiles: [],
       msg: "",
-      me:"",
+      me: "",
       to: "",
       convo: [],
       showConvos: false,
+      convoId:""
     };
   }
+  
   loadPreviousConvo = async (name) => {
     const url = process.env.REACT_APP_URL + "/convos/getConvo";
     await fetch(url, {
@@ -35,10 +38,14 @@ class Chat extends Component {
       }),
     })
       .then((response) => response.json())
-      .then((data) => this.setState({ convo: data.messages }));
+      .then((data) => this.handleDataUpdate(data));
     this.setState({ to: name });
   };
- 
+  handleDataUpdate = (data) => {
+    console.log("id -----> ", data._id)
+    this.setState({convo:data.messages})
+    this.setState({convoId:data._id})
+  }
   logOut = async (id) => {
     console.log(process.env.REACT_APP_URL);
     const url = process.env.REACT_APP_URL + "/profiles/logOut";
@@ -62,9 +69,11 @@ class Chat extends Component {
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
       },
       body: JSON.stringify({
-        from: [this.state.me,localStorage.getItem("username")],
+        from: [this.state.me, localStorage.getItem("username")],
         to: this.state.to,
         message: this.state.msg,
+        isLiked: false,
+        uniqId: uniqid(),
       }),
     })
       .then((response) => response.json())
@@ -74,15 +83,33 @@ class Chat extends Component {
       from: [this.state.me, localStorage.getItem("username")],
       to: this.state.to,
       message: this.state.msg,
+      isLiked: false,
+      uniqId: uniqid(),
     });
-    document.querySelector(".msgInput").value = ""
+    document.querySelector(".msgInput").value = "";
+  };
+  sendLike = async (msgId) => {
+  console.log("msgId ->" + msgId)
+    const url = process.env.REACT_APP_URL + "/convos/sendLike/" + this.state.convoId + "/" + msgId;
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+    })
+      .then((response) => response.json())
+      .then((data) =>    socket.emit("sendLike", {
+        //emitting an event with a payload to send the message to all connected users
+        like:"sent"
+      }));
+      this.loadPreviousConvo(this.state.to)
   };
   componentWillUnmount = async () => {
-    await this.logOut()
-   }
+    await this.logOut();
+  };
   componentDidMount = async () => {
     socket.on("sendMsg", (msg) =>
-      this.setState({ convo: this.state.convo.concat(msg) })
+     this.loadPreviousConvo(this.state.to)
     );
     socket.on("login", (user) =>
       this.setState({ onlineProfiles: this.state.onlineProfiles.concat(user) })
@@ -93,10 +120,10 @@ class Chat extends Component {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-      }
+      },
     })
       .then((response) => response.json())
-      .then((data) => this.setState({me:data.profilePic}));
+      .then((data) => this.setState({ me: data.profilePic }));
     socket.on("logOut", (name) =>
       this.setState({
         onlineProfiles: this.state.onlineProfiles.filter(
@@ -128,84 +155,81 @@ class Chat extends Component {
           LogOut
         </p>
         <Container>
-        <Row className="logoRow d-flex justify-content-center ">
-          <img src={logo} />
+          <Row className="logoRow d-flex justify-content-center ">
+            <img src={logo} />
           </Row>{" "}
-        <h className="pplOnline d-flex justify-content-center">
-          People Online{" "}
-        </h>
-        <Container className="onlineProfiles">
-          {this.state.onlineProfiles
-            .filter(
-              (profile) => profile.name !== localStorage.getItem("username")
-            )
-            .map((profile) => (
-              <Row
-                className="profileRow d-flex justify-content-center"
-                onClick={() => this.loadPreviousConvo(profile.name)}
-              >
-                <p className="onlineUser">
-                  <h>{profile.name}</h>
+          <h className="pplOnline d-flex justify-content-center">
+            People Online{" "}
+          </h>
+          <Container className="onlineProfiles">
+            {this.state.onlineProfiles
+              .filter(
+                (profile) => profile.name !== localStorage.getItem("username")
+              )
+              .map((profile) => (
+                <Row
+                  className="profileRow d-flex justify-content-center"
+                  onClick={() => this.loadPreviousConvo(profile.name)}
+                >
+                  <p className="onlineUser">
+                    <h>{profile.name}</h>
+                  </p>
+                </Row>
+              ))}
+          </Container>
+          <h className="chatHeading">
+            {" "}
+            {this.state.to === ""
+              ? "Select someone to chat with"
+              : "Your chat with " + this.state.to}{" "}
+          </h>
+          <Container className="chatContainer mt-3">
+            {this.state.convo.map((msg) => (
+              <Row onDoubleClick={() => this.sendLike(msg.uniqId)}>
+                <p
+                  className={
+                    msg.from[1] === localStorage.getItem("username")
+                      ? "msgRowMe"
+                      : "visually-hidden"
+                  }
+                >
+                  <h className="borderClass">{msg.message}</h>
+                  <img src={msg.from[0]} className="profilePic1" />
+                </p>
+                <p
+                  className={
+                    msg.from[1] === localStorage.getItem("username")
+                      ? "visually-hidden"
+                      : " msgRow "
+                  }
+                >
+                  <img src={msg.from[0]} className="profilePic2" />
+                  <h className="borderClass2">{msg.message}</h>
                 </p>
               </Row>
             ))}
-        </Container>
-        <h className="chatHeading">
-          {" "}
-          {this.state.to === ""
-            ? "Select someone to chat with"
-            : "Your chat with " + this.state.to}{" "}
-        </h>
-        <Container className="chatContainer mt-3">
-          {this.state.convo.map((msg) => (
-            <Row>
-              
-              <p
-                className={
-                  msg.from[1] === localStorage.getItem("username")
-                    ? "msgRowMe"
-                    : "visually-hidden"
-                }
-              >
-           
-                <h className="borderClass">{msg.message}</h>
-                <img src = {msg.from[0]} className = "profilePic1"/>
-              </p>
-              <p
-                className={
-                  msg.from[1] === localStorage.getItem("username")
-                    ? "visually-hidden"
-                    : " msgRow "
-                }
-              >
-                   <img src = {msg.from[0]} className = "profilePic2"/>
-                <h className="borderClass2">{msg.message}</h>
-             
-              </p>
-            </Row>
-          ))}
-          {this.state.to !== "" ? (
-            <>
-              <Row className="d-flex justify-content-center mt-3">
-                <input
-                  className="msgInput"
-                  onChange={(e) =>
-                    this.setState({ msg: e.currentTarget.value })
-                  }
-                  placeholder="type here"
-                />
-              </Row>
-              <Row className="d-flex justify-content-center mt-1">
-                <h className="sendMsgBtn" onClick={() => this.sendMsg()}>
-                  {" "}
-                  Send{" "}
-                </h>
-              </Row>
-            </>
-          ) : (
-            <> </>
-          )}
-        </Container>
+            {this.state.to !== "" ? (
+              <>
+                <Row className="d-flex justify-content-center mt-3">
+                  <input
+                    className="msgInput"
+                    onChange={(e) =>
+                      this.setState({ msg: e.currentTarget.value })
+                    }
+                    placeholder="type here"
+                  />
+                </Row>
+                <Row className="d-flex justify-content-center mt-1">
+                  <h className="sendMsgBtn" onClick={() => this.sendMsg()}>
+                    {" "}
+                    Send{" "}
+                  </h>
+                </Row>
+              </>
+            ) : (
+              <> </>
+            )}
+          </Container>
         </Container>
       </>
     );
